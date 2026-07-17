@@ -1,0 +1,797 @@
+// ============================================
+// ANIME STREAM - Main Application
+// Complete SPA with all features
+// ============================================
+
+class AnimeStreamApp {
+    constructor() {
+        this.currentHeroSlide = 0;
+        this.heroInterval = null;
+        this.currentUser = null;
+        this.favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+        this.watchHistory = JSON.parse(localStorage.getItem('watchHistory') || '[]');
+        this.currentLanguage = localStorage.getItem('language') || 'ar';
+        this.isDarkTheme = localStorage.getItem('theme') !== 'light';
+        this.searchTimeout = null;
+
+        this.init();
+    }
+
+    init() {
+        this.setupTheme();
+        this.setupEventListeners();
+        this.renderHero();
+        this.renderTrending();
+        this.renderNewEpisodes();
+        this.renderTopRated();
+        this.renderKoreanDrama();
+        this.renderChinese();
+        this.renderMovies();
+        this.renderGenres();
+        this.startHeroSlider();
+        this.hideLoadingScreen();
+        this.setupScrollAnimations();
+    }
+
+    // ============================================
+    // LOADING SCREEN
+    // ============================================
+    hideLoadingScreen() {
+        setTimeout(() => {
+            const loader = document.getElementById('loading-screen');
+            if (loader) {
+                loader.classList.add('hidden');
+            }
+        }, 2500);
+    }
+
+    // ============================================
+    // THEME MANAGEMENT
+    // ============================================
+    setupTheme() {
+        if (!this.isDarkTheme) {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+        }
+    }
+
+    toggleTheme() {
+        this.isDarkTheme = !this.isDarkTheme;
+        if (this.isDarkTheme) {
+            document.documentElement.removeAttribute('data-theme');
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-moon"></i>';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
+            localStorage.setItem('theme', 'light');
+        }
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+    setupEventListeners() {
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Theme toggle
+        document.getElementById('themeToggle').addEventListener('click', () => this.toggleTheme());
+
+        // Mobile menu
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.add('active');
+        });
+
+        document.getElementById('closeMobileMenu').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.remove('active');
+        });
+
+        // Hero navigation
+        document.getElementById('heroPrev').addEventListener('click', () => this.prevHeroSlide());
+        document.getElementById('heroNext').addEventListener('click', () => this.nextHeroSlide());
+
+        // Search
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.length > 0) {
+                document.getElementById('searchSuggestions').classList.add('active');
+            }
+        });
+
+        // Close search suggestions on click outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-box')) {
+                document.getElementById('searchSuggestions').classList.remove('active');
+            }
+        });
+
+        // Auth tabs
+        document.querySelectorAll('.auth-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+
+                document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+                document.getElementById(e.target.dataset.tab + 'Form').classList.add('active');
+            });
+        });
+
+        // Language selector
+        document.querySelectorAll('.lang-dropdown a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const lang = e.target.dataset.lang;
+                this.changeLanguage(lang);
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeModal();
+                this.closeVideo();
+                this.closeAuthModal();
+            }
+            if (e.key === 'ArrowLeft' && document.getElementById('animeModal').classList.contains('active')) {
+                this.prevHeroSlide();
+            }
+            if (e.key === 'ArrowRight' && document.getElementById('animeModal').classList.contains('active')) {
+                this.nextHeroSlide();
+            }
+        });
+    }
+
+    // ============================================
+    // HERO SLIDER
+    // ============================================
+    renderHero() {
+        const slider = document.getElementById('heroSlider');
+        const dots = document.getElementById('heroDots');
+
+        slider.innerHTML = animeData.heroSlides.map((slide, index) => `
+            <div class="hero-slide ${index === 0 ? 'active' : ''}" data-index="${index}">
+                <img src="${slide.image}" alt="${slide.title}" loading="${index === 0 ? 'eager' : 'lazy'}">
+            </div>
+        `).join('');
+
+        dots.innerHTML = animeData.heroSlides.map((_, index) => `
+            <div class="hero-dot ${index === 0 ? 'active' : ''}" data-index="${index}" onclick="app.goToHeroSlide(${index})"></div>
+        `).join('');
+
+        this.updateHeroContent(0);
+    }
+
+    updateHeroContent(index) {
+        const slide = animeData.heroSlides[index];
+        document.getElementById('heroTitle').textContent = slide.title;
+        document.getElementById('heroDescription').textContent = slide.description;
+
+        // Update meta
+        const metaContainer = document.querySelector('.hero-meta');
+        metaContainer.innerHTML = `
+            <span class="meta-item"><i class="fas fa-star"></i> ${slide.rating}</span>
+            <span class="meta-item"><i class="fas fa-calendar"></i> ${slide.year}</span>
+            <span class="meta-item"><i class="fas fa-clock"></i> ${slide.duration}</span>
+            <span class="meta-item"><i class="fas fa-closed-captioning"></i> ترجمة عربية</span>
+        `;
+    }
+
+    startHeroSlider() {
+        this.heroInterval = setInterval(() => {
+            this.nextHeroSlide();
+        }, 6000);
+    }
+
+    stopHeroSlider() {
+        clearInterval(this.heroInterval);
+    }
+
+    nextHeroSlide() {
+        this.goToHeroSlide((this.currentHeroSlide + 1) % animeData.heroSlides.length);
+    }
+
+    prevHeroSlide() {
+        this.goToHeroSlide((this.currentHeroSlide - 1 + animeData.heroSlides.length) % animeData.heroSlides.length);
+    }
+
+    goToHeroSlide(index) {
+        this.stopHeroSlider();
+
+        const slides = document.querySelectorAll('.hero-slide');
+        const dots = document.querySelectorAll('.hero-dot');
+
+        slides[this.currentHeroSlide].classList.remove('active');
+        dots[this.currentHeroSlide].classList.remove('active');
+
+        this.currentHeroSlide = index;
+
+        slides[this.currentHeroSlide].classList.add('active');
+        dots[this.currentHeroSlide].classList.add('active');
+
+        this.updateHeroContent(this.currentHeroSlide);
+        this.startHeroSlider();
+    }
+
+    // ============================================
+    // CONTENT RENDERERS
+    // ============================================
+    createAnimeCard(anime, badge = null) {
+        const isFav = this.favorites.includes(anime.id);
+        const badgeHtml = badge ? `<div class="card-badge ${badge}">${badge === 'new' ? 'جديد' : badge === 'movie' ? 'فيلم' : 'Top'}</div>` : '';
+
+        return `
+            <div class="anime-card" onclick="app.showAnimeDetail(${anime.id})">
+                <div class="card-image">
+                    <img src="${anime.image}" alt="${anime.title}" loading="lazy">
+                    <div class="card-overlay">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                    ${badgeHtml}
+                    <div class="card-rating">
+                        <i class="fas fa-star"></i> ${anime.rating}
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${anime.title}</div>
+                    <div class="card-meta">
+                        <span><i class="fas fa-tv"></i> ${anime.episodes} حلقة</span>
+                        <span><i class="fas fa-calendar"></i> ${anime.year}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderTrending() {
+        const slider = document.getElementById('trendingSlider');
+        slider.innerHTML = animeData.trending.map(anime => this.createAnimeCard(anime, 'new')).join('');
+    }
+
+    renderNewEpisodes() {
+        const grid = document.getElementById('newEpisodesGrid');
+        grid.innerHTML = animeData.newEpisodes.map(ep => `
+            <div class="episode-card" onclick="app.showAnimeDetail(${ep.id})">
+                <div class="episode-thumb">
+                    <img src="${ep.image}" alt="${ep.title}" loading="lazy">
+                    <span class="episode-duration">${ep.duration}</span>
+                </div>
+                <div class="episode-info">
+                    <div class="episode-title">${ep.title}</div>
+                    <div class="episode-number">${ep.episode}</div>
+                    <div class="episode-meta">
+                        <i class="fas fa-clock"></i> ${ep.date}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    renderTopRated() {
+        const slider = document.getElementById('topRatedSlider');
+        slider.innerHTML = animeData.topRated.map(anime => this.createAnimeCard(anime, 'top')).join('');
+    }
+
+    renderKoreanDrama() {
+        const slider = document.getElementById('kdramaSlider');
+        slider.innerHTML = animeData.kdrama.map(drama => this.createAnimeCard(drama, 'new')).join('');
+    }
+
+    renderChinese() {
+        const slider = document.getElementById('chineseSlider');
+        slider.innerHTML = animeData.chinese.map(anime => this.createAnimeCard(anime, 'new')).join('');
+    }
+
+    renderMovies() {
+        const slider = document.getElementById('moviesSlider');
+        slider.innerHTML = animeData.movies.map(movie => this.createAnimeCard(movie, 'movie')).join('');
+    }
+
+    renderGenres() {
+        const grid = document.getElementById('genresGrid');
+        grid.innerHTML = animeData.genres.map(genre => `
+            <div class="genre-card" onclick="app.filterByGenre('${genre.nameEn}')">
+                <i class="fas ${genre.icon}"></i>
+                <span>${genre.name}</span>
+            </div>
+        `).join('');
+    }
+
+    // ============================================
+    // ANIME DETAIL MODAL
+    // ============================================
+    showAnimeDetail(id) {
+        // Find anime in all categories
+        let anime = null;
+        const allAnime = [
+            ...animeData.heroSlides,
+            ...animeData.trending,
+            ...animeData.topRated,
+            ...animeData.kdrama,
+            ...animeData.chinese,
+            ...animeData.movies
+        ];
+
+        anime = allAnime.find(a => a.id === id);
+
+        if (!anime) {
+            this.showToast('لم يتم العثور على الأنمي', 'error');
+            return;
+        }
+
+        const modalBody = document.getElementById('modalBody');
+        const isFav = this.favorites.includes(id);
+        const episodes = anime.episodes || 12;
+
+        modalBody.innerHTML = `
+            <div class="anime-detail">
+                <div class="anime-detail-banner">
+                    <img src="${anime.image}" alt="${anime.title}">
+                </div>
+                <div class="anime-detail-content">
+                    <div class="anime-detail-header">
+                        <div class="anime-detail-poster">
+                            <img src="${anime.image}" alt="${anime.title}">
+                        </div>
+                        <div class="anime-detail-info">
+                            <h1 class="anime-detail-title">${anime.title}</h1>
+                            <div class="anime-detail-jp-title">${anime.titleJp || anime.titleEn || ''}</div>
+                            <div class="anime-detail-meta">
+                                <span class="rating"><i class="fas fa-star"></i> ${anime.rating}</span>
+                                <span><i class="fas fa-calendar"></i> ${anime.year}</span>
+                                <span><i class="fas fa-tv"></i> ${episodes} حلقة</span>
+                                <span><i class="fas fa-closed-captioning"></i> ترجمة عربية</span>
+                            </div>
+                            <div class="anime-detail-tags">
+                                ${(anime.genres || ['أكشن', 'مغامرات']).map(g => `<span class="tag">${g}</span>`).join('')}
+                            </div>
+                            <p class="anime-detail-description">${anime.description || 'وصف الأنمي غير متوفر حالياً.'}</p>
+                            <div class="anime-detail-actions">
+                                <button class="btn btn-primary btn-lg" onclick="app.playAnime(${anime.id})">
+                                    <i class="fas fa-play"></i> مشاهدة الآن
+                                </button>
+                                <button class="btn btn-secondary btn-lg" onclick="app.toggleFavorite(${anime.id})">
+                                    <i class="fas ${isFav ? 'fa-heart' : 'fa-heart-o'}"></i> ${isFav ? 'إزالة من المفضلة' : 'أضف للمفضلة'}
+                                </button>
+                                <button class="btn btn-icon" onclick="app.shareAnime(${anime.id})">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="anime-detail-episodes">
+                        <h3><i class="fas fa-list"></i> قائمة الحلقات</h3>
+                        <div class="episodes-list">
+                            ${Array.from({length: Math.min(episodes, 12)}, (_, i) => `
+                                <div class="episode-card" onclick="app.playEpisode(${anime.id}, ${i + 1})">
+                                    <div class="episode-thumb">
+                                        <img src="${anime.image}" alt="حلقة ${i + 1}" loading="lazy">
+                                        <span class="episode-duration">24:00</span>
+                                    </div>
+                                    <div class="episode-info">
+                                        <div class="episode-title">${anime.title}</div>
+                                        <div class="episode-number">الحلقة ${i + 1}</div>
+                                        <div class="episode-meta">ترجمة عربية</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 30px; padding: 20px; background: var(--bg-tertiary); border-radius: var(--border-radius-md);">
+                        <h3 style="margin-bottom: 12px;"><i class="fas fa-info-circle" style="color: var(--accent-primary);"></i> مصدر قانوني</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;">
+                            هذا المحتوى متاح على <strong>${anime.source || 'Crunchyroll'}</strong>. 
+                            يمكنك مشاهدته مباشرة من المنصة الرسمية. نحن نقدم لك دليلاً شاملاً ومعلومات تفصيلية عن الأنمي.
+                        </p>
+                        <a href="${anime.sourceUrl || 'https://www.crunchyroll.com'}" target="_blank" rel="noopener noreferrer" 
+                           style="display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: var(--accent-primary); font-weight: 700;">
+                            <i class="fas fa-external-link-alt"></i> الانتقال للمنصة الرسمية
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('animeModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeModal() {
+        document.getElementById('animeModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // ============================================
+    // VIDEO PLAYER
+    // ============================================
+    playAnime(id) {
+        this.showToast('جاري فتح المشغل...', 'info');
+
+        // Find anime
+        const allAnime = [
+            ...animeData.heroSlides,
+            ...animeData.trending,
+            ...animeData.topRated,
+            ...animeData.kdrama,
+            ...animeData.chinese,
+            ...animeData.movies
+        ];
+
+        const anime = allAnime.find(a => a.id === id);
+        if (!anime) return;
+
+        // Add to watch history
+        this.addToHistory(id);
+
+        const videoPlayer = document.getElementById('videoPlayer');
+        const videoInfo = document.getElementById('videoInfo');
+        const videoEpisodes = document.getElementById('videoEpisodes');
+
+        // Show legal source message with embedded player or redirect
+        videoPlayer.innerHTML = `
+            <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--bg-primary); padding: 40px; text-align: center;">
+                <div style="font-size: 4rem; color: var(--accent-primary); margin-bottom: 20px;">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <h2 style="margin-bottom: 16px; font-size: 1.5rem;">${anime.title}</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 24px; max-width: 500px; line-height: 1.8;">
+                    هذا المحتوى متاح على المنصة الرسمية <strong>${anime.source || 'Crunchyroll'}</strong>.
+                    انقر على الزر أدناه للانتقال إلى المنصة القانونية.
+                </p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+                    <a href="${anime.sourceUrl || 'https://www.crunchyroll.com'}" target="_blank" rel="noopener noreferrer" 
+                       class="btn btn-primary btn-lg" style="text-decoration: none;">
+                        <i class="fas fa-external-link-alt"></i> مشاهدة على ${anime.source || 'Crunchyroll'}
+                    </a>
+                    <button class="btn btn-secondary btn-lg" onclick="app.closeVideo()">
+                        <i class="fas fa-times"></i> إغلاق
+                    </button>
+                </div>
+                <p style="margin-top: 20px; font-size: 0.8rem; color: var(--text-muted);">
+                    <i class="fas fa-shield-alt"></i> نحن ندعم المصادر القانونية فقط
+                </p>
+            </div>
+        `;
+
+        videoInfo.innerHTML = `
+            <h3>${anime.title}</h3>
+            <p>الحلقة 1 | ترجمة عربية | ${anime.source || 'Crunchyroll'}</p>
+        `;
+
+        const episodes = anime.episodes || 12;
+        videoEpisodes.innerHTML = `
+            <h4>قائمة الحلقات</h4>
+            <div class="video-episode-list">
+                ${Array.from({length: Math.min(episodes, 20)}, (_, i) => `
+                    <div class="video-episode-item ${i === 0 ? 'active' : ''}" onclick="app.playEpisode(${anime.id}, ${i + 1})">
+                        ${i + 1}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        document.getElementById('videoModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    playEpisode(animeId, episodeNum) {
+        this.showToast(`جاري تحميل الحلقة ${episodeNum}...`, 'info');
+
+        // Update active episode
+        document.querySelectorAll('.video-episode-item').forEach((item, index) => {
+            item.classList.toggle('active', index === episodeNum - 1);
+        });
+
+        // In a real app, this would load the actual video
+        setTimeout(() => {
+            this.showToast(`الحلقة ${episodeNum} جاهزة للمشاهدة`, 'success');
+        }, 1000);
+    }
+
+    closeVideo() {
+        document.getElementById('videoModal').classList.remove('active');
+        document.getElementById('videoPlayer').innerHTML = '';
+        document.body.style.overflow = '';
+    }
+
+    // ============================================
+    // HERO ACTIONS
+    // ============================================
+    playHero() {
+        const currentSlide = animeData.heroSlides[this.currentHeroSlide];
+        this.playAnime(currentSlide.id);
+    }
+
+    addToList() {
+        const currentSlide = animeData.heroSlides[this.currentHeroSlide];
+        this.toggleFavorite(currentSlide.id);
+    }
+
+    showDetails() {
+        const currentSlide = animeData.heroSlides[this.currentHeroSlide];
+        this.showAnimeDetail(currentSlide.id);
+    }
+
+    // ============================================
+    // USER FEATURES
+    // ============================================
+    toggleFavorite(id) {
+        const index = this.favorites.indexOf(id);
+        if (index > -1) {
+            this.favorites.splice(index, 1);
+            this.showToast('تمت الإزالة من المفضلة', 'success');
+        } else {
+            this.favorites.push(id);
+            this.showToast('تمت الإضافة للمفضلة', 'success');
+        }
+        localStorage.setItem('favorites', JSON.stringify(this.favorites));
+
+        // Update button if modal is open
+        const favBtn = document.querySelector('.anime-detail-actions .btn-secondary');
+        if (favBtn) {
+            const isFav = this.favorites.includes(id);
+            favBtn.innerHTML = `<i class="fas ${isFav ? 'fa-heart' : 'fa-heart-o'}"></i> ${isFav ? 'إزالة من المفضلة' : 'أضف للمفضلة'}`;
+        }
+    }
+
+    addToHistory(id) {
+        const index = this.watchHistory.indexOf(id);
+        if (index > -1) {
+            this.watchHistory.splice(index, 1);
+        }
+        this.watchHistory.unshift(id);
+        if (this.watchHistory.length > 50) {
+            this.watchHistory.pop();
+        }
+        localStorage.setItem('watchHistory', JSON.stringify(this.watchHistory));
+    }
+
+    shareAnime(id) {
+        const url = `${window.location.origin}?anime=${id}`;
+        if (navigator.share) {
+            navigator.share({
+                title: 'أنمي ستريم',
+                text: 'شاهد هذا الأنمي الرائع!',
+                url: url
+            });
+        } else {
+            navigator.clipboard.writeText(url);
+            this.showToast('تم نسخ الرابط!', 'success');
+        }
+    }
+
+    // ============================================
+    // SEARCH
+    // ============================================
+    handleSearch(query) {
+        clearTimeout(this.searchTimeout);
+        const suggestions = document.getElementById('searchSuggestions');
+
+        if (query.length < 2) {
+            suggestions.classList.remove('active');
+            return;
+        }
+
+        this.searchTimeout = setTimeout(() => {
+            const allAnime = [
+                ...animeData.heroSlides,
+                ...animeData.trending,
+                ...animeData.topRated,
+                ...animeData.kdrama,
+                ...animeData.chinese,
+                ...animeData.movies
+            ];
+
+            const results = allAnime.filter(anime => 
+                anime.title.toLowerCase().includes(query.toLowerCase()) ||
+                (anime.titleEn && anime.titleEn.toLowerCase().includes(query.toLowerCase())) ||
+                (anime.titleJp && anime.titleJp.toLowerCase().includes(query.toLowerCase()))
+            ).slice(0, 8);
+
+            if (results.length === 0) {
+                suggestions.innerHTML = `
+                    <div class="suggestion-item" style="justify-content: center; color: var(--text-muted);">
+                        <i class="fas fa-search" style="margin-left: 8px;"></i> لا توجد نتائج
+                    </div>
+                `;
+            } else {
+                suggestions.innerHTML = results.map(anime => `
+                    <div class="suggestion-item" onclick="app.showAnimeDetail(${anime.id}); document.getElementById('searchSuggestions').classList.remove('active');">
+                        <img src="${anime.image}" alt="${anime.title}" loading="lazy">
+                        <div class="suggestion-info">
+                            <div class="suggestion-title">${anime.title}</div>
+                            <div class="suggestion-meta">
+                                <i class="fas fa-star" style="color: var(--warning);"></i> ${anime.rating} | ${anime.year} | ${anime.type || 'TV'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            suggestions.classList.add('active');
+        }, 300);
+    }
+
+    search() {
+        const query = document.getElementById('searchInput').value;
+        if (query.length < 2) {
+            this.showToast('الرجاء إدخال كلمة بحث', 'warning');
+            return;
+        }
+        this.showToast(`جاري البحث عن: ${query}`, 'info');
+        document.getElementById('searchSuggestions').classList.remove('active');
+    }
+
+    // ============================================
+    // AUTHENTICATION
+    // ============================================
+    toggleAuthModal() {
+        document.getElementById('authModal').classList.toggle('active');
+        if (document.getElementById('authModal').classList.contains('active')) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+    }
+
+    closeAuthModal() {
+        document.getElementById('authModal').classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    login() {
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        if (!email || !password) {
+            this.showToast('الرجاء إدخال البريد وكلمة المرور', 'error');
+            return;
+        }
+
+        // Simulate login
+        this.currentUser = { email, name: email.split('@')[0] };
+        this.updateUserUI();
+        this.closeAuthModal();
+        this.showToast('تم تسجيل الدخول بنجاح!', 'success');
+    }
+
+    register() {
+        const name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        const confirm = document.getElementById('registerConfirm').value;
+
+        if (!name || !email || !password) {
+            this.showToast('الرجاء ملء جميع الحقول', 'error');
+            return;
+        }
+
+        if (password !== confirm) {
+            this.showToast('كلمتا المرور غير متطابقتين', 'error');
+            return;
+        }
+
+        this.currentUser = { email, name };
+        this.updateUserUI();
+        this.closeAuthModal();
+        this.showToast('تم إنشاء الحساب بنجاح!', 'success');
+    }
+
+    updateUserUI() {
+        const userMenu = document.getElementById('userMenu');
+        if (this.currentUser) {
+            userMenu.innerHTML = `
+                <button class="user-btn" style="background: var(--bg-tertiary); color: var(--text-primary);">
+                    <i class="fas fa-user-circle"></i>
+                    <span>${this.currentUser.name}</span>
+                </button>
+            `;
+        }
+    }
+
+    logout() {
+        this.currentUser = null;
+        document.getElementById('userMenu').innerHTML = `
+            <button class="user-btn" onclick="app.toggleAuthModal()">
+                <i class="fas fa-user"></i>
+                <span>تسجيل الدخول</span>
+            </button>
+        `;
+        this.showToast('تم تسجيل الخروج', 'info');
+    }
+
+    // ============================================
+    // LANGUAGE
+    // ============================================
+    changeLanguage(lang) {
+        this.currentLanguage = lang;
+        localStorage.setItem('language', lang);
+
+        document.querySelectorAll('.lang-dropdown a').forEach(link => {
+            link.classList.toggle('active', link.dataset.lang === lang);
+        });
+
+        const langNames = { ar: 'العربية', en: 'English', ja: '日本語', ko: '한국어', zh: '中文' };
+        document.querySelector('.lang-btn span').textContent = langNames[lang];
+
+        this.showToast(`تم تغيير اللغة إلى ${langNames[lang]}`, 'success');
+    }
+
+    // ============================================
+    // NAVIGATION
+    // ============================================
+    goHome() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        this.showToast('العودة للرئيسية', 'info');
+    }
+
+    viewAll(category) {
+        this.showToast(`عرض جميع ${category}`, 'info');
+        // In a full app, this would navigate to a category page
+    }
+
+    filterByGenre(genre) {
+        this.showToast(`تصفية حسب: ${genre}`, 'info');
+        // In a full app, this would filter the content
+    }
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            warning: 'fa-exclamation-triangle',
+            info: 'fa-info-circle'
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <i class="fas ${icons[type]}"></i>
+            <span>${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    // ============================================
+    // SCROLL ANIMATIONS
+    // ============================================
+    setupScrollAnimations() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.add('fade-in');
+            observer.observe(section);
+        });
+    }
+}
+
+// Initialize app
+const app = new AnimeStreamApp();
+
+// Expose to global scope for onclick handlers
+window.app = app;
