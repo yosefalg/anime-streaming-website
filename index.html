@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أنمي ستريم - منصة الأنمي العربية | Anime Stream</title>
+    <meta name="description" content="أكبر منصة عربية لمشاهدة الأنمي القانوني المجاني مع ترجمة عربية - Anime, Korean Drama, Chinese Animation">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-container">
+            <div class="anime-loader">
+                <div class="circle"></div>
+                <div class="circle"></div>
+                <div class="circle"></div>
+            </div>
+            <h2 class="loader-text">جاري تحميل عالم الأنمي...</h2>
+            <div class="loader-progress">
+                <div class="progress-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo" onclick="app.goHome()">
+                <div class="logo-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <span class="logo-text">أنمي<span class="highlight">ستريم</span></span>
+            </a>
+
+            <div class="nav-links" id="navLinks">
+                <a href="#" class="nav-link active" data-page="home">
+                    <i class="fas fa-home"></i>
+                    <span>الرئيسية</span>
+                </a>
+                <a href="#" class="nav-link" data-page="anime">
+                    <i class="fas fa-tv"></i>
+                    <span>الأنمي</span>
+                </a>
+                <a href="#" class="nav-link" data-page="movies">
+                    <i class="fas fa-film"></i>
+                    <span>الأفلام</span>
+                </a>
+                <a href="#" class="nav-link" data-page="kdrama">
+                    <i class="fas fa-heart"></i>
+                    <span>دراما كورية</span>
+                </a>
+                <a href="#" class="nav-link" data-page="chinese">
+                    <i class="fas fa-dragon"></i>
+                    <span>أنمي صيني</span>
+                </a>
+                <a href="#" class="nav-link" data-page="schedule">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>جدول الحلقات</span>
+                </a>
+            </div>
+
+            <div class="nav-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="ابحث عن أنمي، فيلم، شخصية..." autocomplete="off">
+                    <button class="search-btn" onclick="app.search()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="search-suggestions" id="searchSuggestions"></div>
+                </div>
+
+                <div class="language-selector">
+                    <button class="lang-btn" id="langBtn">
+                        <i class="fas fa-globe"></i>
+                        <span>العربية</span>
+                    </button>
+                    <div class="lang-dropdown">
+                        <a href="#" data-lang="ar" class="active">العربية</a>
+                        <a href="#" data-lang="en">English</a>
+                        <a href="#" data-lang="ja">日本語</a>
+                        <a href="#" data-lang="ko">한국어</a>
+                        <a href="#" data-lang="zh">中文</a>
+                    </div>
+                </div>
+
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+
+                <div class="user-menu" id="userMenu">
+                    <button class="user-btn" onclick="app.toggleAuthModal()">
+                        <i class="fas fa-user"></i>
+                        <span>تسجيل الدخول</span>
+                    </button>
+                </div>
+
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <div class="mobile-menu-header">
+            <span class="logo-text">أنمي<span class="highlight">ستريم</span></span>
+            <button class="close-mobile-menu" id="closeMobileMenu">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="mobile-nav-links">
+            <a href="#" data-page="home" class="active"><i class="fas fa-home"></i> الرئيسية</a>
+            <a href="#" data-page="anime"><i class="fas fa-tv"></i> الأنمي</a>
+            <a href="#" data-page="movies"><i class="fas fa-film"></i> الأفلام</a>
+            <a href="#" data-page="kdrama"><i class="fas fa-heart"></i> دراما كورية</a>
+            <a href="#" data-page="chinese"><i class="fas fa-dragon"></i> أنمي صيني</a>
+            <a href="#" data-page="schedule"><i class="fas fa-calendar-alt"></i> جدول الحلقات</a>
+            <a href="#" data-page="favorites"><i class="fas fa-star"></i> المفضلة</a>
+            <a href="#" data-page="history"><i class="fas fa-history"></i> سجل المشاهدة</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="mainContent">
+        <!-- Hero Section -->
+        <section class="hero-section" id="heroSection">
+            <div class="hero-slider" id="heroSlider">
+                <!-- Hero slides will be loaded dynamically -->
+            </div>
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-new">جديد</span>
+                    <span class="badge-type">TV Series</span>
+                </div>
+                <h1 class="hero-title" id="heroTitle">Attack on Titan</h1>
+                <p class="hero-description" id="heroDescription">
+                    في عالم حيث البشرية محاصرة داخل جدران ضخمة لحمايتها من عملاقة آكلة للبشر، يكتشف إرين ييغر قوة تيتان داخل نفسه ويقرر محاربة هذه المخلوقات.
+                </p>
+                <div class="hero-meta">
+                    <span class="meta-item"><i class="fas fa-star"></i> 9.1</span>
+                    <span class="meta-item"><i class="fas fa-calendar"></i> 2023</span>
+                    <span class="meta-item"><i class="fas fa-clock"></i> 24 دقيقة</span>
+                    <span class="meta-item"><i class="fas fa-closed-captioning"></i> ترجمة عربية</span>
+                </div>
+                <div class="hero-actions">
+                    <button class="btn btn-primary btn-lg" onclick="app.playHero()">
+                        <i class="fas fa-play"></i>
+                        مشاهدة الآن
+                    </button>
+                    <button class="btn btn-secondary btn-lg" onclick="app.addToList()">
+                        <i class="fas fa-plus"></i>
+                        أضف للقائمة
+                    </button>
+                    <button class="btn btn-icon" onclick="app.showDetails()">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="hero-nav">
+                <button class="hero-nav-btn prev" id="heroPrev"><i class="fas fa-chevron-right"></i></button>
+                <div class="hero-dots" id="heroDots"></div>
+                <button class="hero-nav-btn next" id="heroNext"><i class="fas fa-chevron-left"></i></button>
+            </div>
+        </section>
+
+        <!-- Content Sections -->
+        <div class="content-wrapper">
+            <!-- Trending Now -->
+            <section class="content-section" id="trendingSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-fire"></i>
+                        الأكثر شعبية الآن
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('trending')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="content-slider" id="trendingSlider">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- New Episodes -->
+            <section class="content-section" id="newEpisodesSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bolt"></i>
+                        حلقات جديدة
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('new')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="episodes-grid" id="newEpisodesGrid">
+                    <!-- Episodes loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Top Rated -->
+            <section class="content-section" id="topRatedSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-trophy"></i>
+                        الأعلى تقييماً
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('top')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="content-slider" id="topRatedSlider">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Korean Drama -->
+            <section class="content-section" id="kdramaSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-heart"></i>
+                        دراما كورية
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('kdrama')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="content-slider" id="kdramaSlider">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Chinese Animation -->
+            <section class="content-section" id="chineseSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-dragon"></i>
+                        أنمي صيني (Donghua)
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('chinese')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="content-slider" id="chineseSlider">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Movies -->
+            <section class="content-section" id="moviesSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-film"></i>
+                        أفلام الأنمي
+                    </h2>
+                    <a href="#" class="view-all" onclick="app.viewAll('movies')">
+                        عرض الكل <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+                <div class="content-slider" id="moviesSlider">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </section>
+
+            <!-- Genres -->
+            <section class="content-section genres-section" id="genresSection">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-tags"></i>
+                        تصفح حسب النوع
+                    </h2>
+                </div>
+                <div class="genres-grid" id="genresGrid">
+                    <!-- Genres loaded dynamically -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Anime Detail Modal -->
+    <div class="modal" id="animeModal">
+        <div class="modal-overlay" onclick="app.closeModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="app.closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-body" id="modalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="video-modal" id="videoModal">
+        <div class="video-overlay" onclick="app.closeVideo()"></div>
+        <div class="video-container">
+            <button class="video-close" onclick="app.closeVideo()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="video-player-wrapper">
+                <div id="videoPlayer"></div>
+            </div>
+            <div class="video-info" id="videoInfo">
+                <!-- Video info loaded dynamically -->
+            </div>
+            <div class="video-episodes" id="videoEpisodes">
+                <!-- Episodes list loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal" id="authModal">
+        <div class="modal-overlay" onclick="app.closeAuthModal()"></div>
+        <div class="modal-content auth-modal-content">
+            <button class="modal-close" onclick="app.closeAuthModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">تسجيل الدخول</button>
+                <button class="auth-tab" data-tab="register">إنشاء حساب</button>
+            </div>
+            <div class="auth-body">
+                <div class="auth-form active" id="loginForm">
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" placeholder="example@email.com" id="loginEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" placeholder="••••••••" id="loginPassword">
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="app.login()">
+                        <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                    </button>
+                    <div class="auth-divider">
+                        <span>أو</span>
+                    </div>
+                    <button class="btn btn-google btn-block">
+                        <i class="fab fa-google"></i> الدخول بحساب Google
+                    </button>
+                    <button class="btn btn-github btn-block">
+                        <i class="fab fa-github"></i> الدخول بحساب GitHub
+                    </button>
+                </div>
+                <div class="auth-form" id="registerForm">
+                    <div class="form-group">
+                        <label>الاسم الكامل</label>
+                        <input type="text" placeholder="محمد أحمد" id="registerName">
+                    </div>
+                    <div class="form-group">
+                        <label>البريد الإلكتروني</label>
+                        <input type="email" placeholder="example@email.com" id="registerEmail">
+                    </div>
+                    <div class="form-group">
+                        <label>كلمة المرور</label>
+                        <input type="password" placeholder="••••••••" id="registerPassword">
+                    </div>
+                    <div class="form-group">
+                        <label>تأكيد كلمة المرور</label>
+                        <input type="password" placeholder="••••••••" id="registerConfirm">
+                    </div>
+                    <button class="btn btn-primary btn-block" onclick="app.register()">
+                        <i class="fas fa-user-plus"></i> إنشاء حساب
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="logo">
+                    <i class="fas fa-play-circle"></i>
+                    <span>أنمي<span class="highlight">ستريم</span></span>
+                </div>
+                <p>أكبر منصة عربية لمشاهدة الأنمي القانوني المجاني. نجمع لك الأنمي من مصادر رسمية وقانونية مع ترجمة عربية احترافية.</p>
+                <div class="social-links">
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-discord"></i></a>
+                    <a href="#"><i class="fab fa-telegram"></i></a>
+                    <a href="#"><i class="fab fa-youtube"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <div class="footer-column">
+                    <h4>استكشف</h4>
+                    <a href="#">الأنمي الشائع</a>
+                    <a href="#">الأفلام</a>
+                    <a href="#">الحلقات الجديدة</a>
+                    <a href="#">جدول الموسم</a>
+                </div>
+                <div class="footer-column">
+                    <h4>الأنواع</h4>
+                    <a href="#">أكشن</a>
+                    <a href="#">رومانسي</a>
+                    <a href="#">خيال علمي</a>
+                    <a href="#">كوميدي</a>
+                </div>
+                <div class="footer-column">
+                    <h4>المساعدة</h4>
+                    <a href="#">مركز المساعدة</a>
+                    <a href="#">الأسئلة الشائعة</a>
+                    <a href="#">الشروط والأحكام</a>
+                    <a href="#">سياسة الخصوصية</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 أنمي ستريم - جميع الحقوق محفوظة | مصادر قانونية فقط</p>
+            <p class="footer-legal">هذا الموقع يستخدم APIs رسمية مثل AniList و Jikan ومصادر قانونية فقط</p>
+        </div>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
